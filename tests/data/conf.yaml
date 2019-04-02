@@ -23,8 +23,8 @@ modules:
 
 packages:
   include:
-#  - tomcatjss
   - foo-pkg
+  - foo-pkg-debuginfo
 
   # Blacklist of packages to exclude
   exclude:

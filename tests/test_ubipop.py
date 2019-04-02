@@ -135,14 +135,30 @@ def test_get_blacklisted_packages(mock_ubipop_runner):
     assert blacklist[0].name == pkg_name
 
 
-def test_match_packages(mock_ubipop_runner):
-    package_name = 'foo-pkg'
+def _get_search_rpms_side_effect(package_name):
+    def _f(*args):
+        if args[1] == package_name:
+            return [get_test_pkg(name=package_name)]
 
-    mock_ubipop_runner.pulp.search_rpms.return_value = [get_test_pkg(name=package_name)]
-    mock_ubipop_runner._match_packages()
+    return _f
+
+
+def test_match_binary_rpms(mock_ubipop_runner):
+    package_name = 'foo-pkg'
+    mock_ubipop_runner.pulp.search_rpms.side_effect = _get_search_rpms_side_effect(package_name)
+    mock_ubipop_runner._match_binary_rpms()
 
     assert len(mock_ubipop_runner.repos.packages) == 1
     assert mock_ubipop_runner.repos.packages[package_name][0].name == package_name
+
+
+def test_match_debug_repms(mock_ubipop_runner):
+    package_name = 'foo-pkg-debuginfo'
+    mock_ubipop_runner.pulp.search_rpms.side_effect = _get_search_rpms_side_effect(package_name)
+    mock_ubipop_runner._match_debug_rpms()
+
+    assert len(mock_ubipop_runner.repos.debug_rpms) == 1
+    assert mock_ubipop_runner.repos.debug_rpms[package_name][0].name == package_name
 
 
 def test_match_modules(mock_ubipop_runner):
@@ -179,7 +195,7 @@ def test_keep_n_newest_packages(mock_ubipop_runner):
                 get_test_pkg(name="tomcatjss",
                              filename="tomcatjss-7.3.8-1.el8+1944+b6c8e16f.noarch.rpm")]
 
-    mock_ubipop_runner.keep_n_newest_packages(packages)
+    mock_ubipop_runner.keep_n_latest_packages(packages)
 
     assert len(packages) == 1
     assert "7.3.8" in packages[0].filename
@@ -195,7 +211,7 @@ def test_keep_n_newest_packages_with_referenced_pkg_in_module(mock_ubipop_runner
     mock_ubipop_runner.repos.pkgs_from_modules["ns"] = \
         [get_test_pkg(name="tomcatjss", filename="tomcatjss-7.3.7-1.el8+1944+b6c8e16f.noarch.rpm")]
 
-    mock_ubipop_runner.keep_n_newest_packages(packages)
+    mock_ubipop_runner.keep_n_latest_packages(packages)
 
     assert len(packages) == 2
     assert "7.3.8" in packages[0].filename
@@ -267,8 +283,8 @@ def test_create_srpms_output_set(mock_ubipop_runner):
     assert out_srpms[0].name == "tomcatjss"
     assert out_srpms[0].filename == expected_src_rpm_filename
 
-
-def test_create_debug_output_set(mock_ubipop_runner):
+### predelat
+def create_debug_output_set(mock_ubipop_runner):
     expected_debug_filename = "tomcatjss-debuginfo-7.3.6-1.el8+1944+b6c8e16f.noarch.rpm"
     mock_ubipop_runner.repos.packages['foo'] = \
         [get_test_pkg(name="tomcatjss",
