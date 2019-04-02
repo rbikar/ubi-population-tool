@@ -251,11 +251,11 @@ class UbiPopulateRunner(object):
             self._finalize_output_units(packages, 'rpm')
 
     def _finalize_output_units(self, units, type_id):
-            self.sort_packages(units)
-            if type_id == 'rpm':
-                self.keep_n_latest_packages(units)  # with respect to packages referenced by modules
-            else:
-                self.keep_n_latest_modules(units)
+        self.sort_packages(units)
+        if type_id == 'rpm':
+            self.keep_n_latest_packages(units)  # with respect to packages referenced by modules
+        else:
+            self.keep_n_latest_modules(units)
 
     def _create_srpms_output_set(self):
         packages = chain.from_iterable(self.repos.packages.values())
