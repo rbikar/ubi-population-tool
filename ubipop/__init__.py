@@ -230,11 +230,10 @@ class UbiPopulateRunner(object):
         return packages_to_exclude
 
     def _exclude_blacklisted_packages(self):
-        blacklisted_binary = list(self.get_blacklisted_packages(
-            chain.from_iterable(self.repos.packages.values())))
-
-        blacklisted_debug = list(self.get_blacklisted_packages(
-            chain.from_iterable(self.repos.debug_rpms.values())))
+        blacklisted_binary = self.get_blacklisted_packages(
+            list(chain.from_iterable(self.repos.packages.values())))
+        blacklisted_debug = self.get_blacklisted_packages(
+            list(chain.from_iterable(self.repos.debug_rpms.values())))
 
         for pkg in blacklisted_binary:
             self.repos.packages.pop(pkg.name, None)

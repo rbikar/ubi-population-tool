@@ -499,10 +499,12 @@ def test_finalize_finalize_modules_output_set(mock_ubipop_runner):
 
 def test_exclude_blacklisted_packages(mock_ubipop_runner):
     mock_ubipop_runner.repos.packages["kernel-blacklisted"] = \
-        [get_test_pkg(name="kernel-blacklisted", filename="foo")]
+        [get_test_pkg(name="kernel-blacklisted",
+                      filename="kernel-blacklisted-7.3.5-1.el8+1944+b6c8e16f.noarch.rpm")]
     mock_ubipop_runner.repos.pkgs_from_modules = deepcopy(mock_ubipop_runner.repos.packages)
     mock_ubipop_runner.repos.debug_rpms["kernel-blacklisted-debuginfo"] = \
-        [get_test_pkg(name="kernel-blacklisted-debuginfo", filename="foo")]
+        [get_test_pkg(name="kernel-blacklisted-debuginfo",
+                      filename="kernel-blacklisted-debuginfo-7.3.5-1.el8+1944+b6c8e16f.noarch.rpm")]
 
     mock_ubipop_runner._exclude_blacklisted_packages()
 
