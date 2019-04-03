@@ -125,15 +125,33 @@ def test_sort_modules(mock_ubipop_runner):
     assert modules[2].version == 3
 
 
-def test_get_blacklisted_packages(mock_ubipop_runner):
+def test_get_blacklisted_packages_match_name_glob(mock_ubipop_runner):
     pkg_name = "foo-pkg"
     test_pkg_list = [get_test_pkg(name=pkg_name,
-                                  filename="{name}-3.0.6-4.el7.noarch.rpm".format(name=pkg_name))]
+                                  filename="{name}-3.0.6-4.el7.noarch.rpm".format(name=pkg_name)),
+                     get_test_pkg(name="no-match-foo-pkg",
+                                  filename="no-match-foo-pkg-3.0.6-4.el7.noarch.rpm")
+                     ]
 
     blacklist = mock_ubipop_runner.get_blacklisted_packages(test_pkg_list)
 
     assert len(blacklist) == 1
     assert blacklist[0].name == pkg_name
+
+
+def test_get_blacklisted_packages_match_arch(mock_ubipop_runner):
+    pkg_name = "foo-arch-test"
+    test_pkg_list = [get_test_pkg(name=pkg_name,
+                                  filename="{name}-3.0.6-4.el7.noarch.rpm".format(name=pkg_name)),
+                     get_test_pkg(name=pkg_name,
+                                  filename="{name}-3.0.6-4.el7.x86_64.rpm".format(name=pkg_name))
+                     ]
+
+    blacklist = mock_ubipop_runner.get_blacklisted_packages(test_pkg_list)
+
+    assert len(blacklist) == 1
+    assert blacklist[0].name == pkg_name
+    assert "x86_64" in blacklist[0].filename
 
 
 def _get_search_rpms_side_effect(package_name):

@@ -31,3 +31,4 @@ packages:
   - kernel*
   - linux-firmware
   - foo-pkg*
+  - foo-arch-test.x86_64
