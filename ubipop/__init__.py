@@ -230,12 +230,17 @@ class UbiPopulateRunner(object):
         return packages_to_exclude
 
     def _exclude_blacklisted_packages(self):
-        blacklisted = list(self.get_blacklisted_packages(
+        blacklisted_binary = list(self.get_blacklisted_packages(
             chain.from_iterable(self.repos.packages.values())))
 
-        for pkg in blacklisted:
+        blacklisted_debug = list(self.get_blacklisted_packages(
+            chain.from_iterable(self.repos.debug_rpms.values())))
+
+        for pkg in blacklisted_binary:
             self.repos.packages.pop(pkg.name, None)
             self.repos.pkgs_from_modules.pop(pkg.name, None)
+
+        for pkg in blacklisted_debug:
             self.repos.debug_rpms.pop(pkg.name, None)
 
     def _finalize_modules_output_set(self):
@@ -251,10 +256,11 @@ class UbiPopulateRunner(object):
             self._finalize_output_units(packages, 'rpm')
 
     def _finalize_output_units(self, units, type_id):
-        self.sort_packages(units)
         if type_id == 'rpm':
+            self.sort_packages(units)
             self.keep_n_latest_packages(units)  # with respect to packages referenced by modules
         else:
+            self.sort_modules(units)
             self.keep_n_latest_modules(units)
 
     def _create_srpms_output_set(self):

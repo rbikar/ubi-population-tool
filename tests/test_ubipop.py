@@ -11,6 +11,7 @@ from ubipop._utils import AssociateActionModules, UnassociateActionModules
 from mock import MagicMock
 from mock import patch
 from more_executors import Executors
+from copy import deepcopy
 
 TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), './data')
 
@@ -283,22 +284,6 @@ def test_create_srpms_output_set(mock_ubipop_runner):
     assert out_srpms[0].name == "tomcatjss"
     assert out_srpms[0].filename == expected_src_rpm_filename
 
-### predelat
-def create_debug_output_set(mock_ubipop_runner):
-    expected_debug_filename = "tomcatjss-debuginfo-7.3.6-1.el8+1944+b6c8e16f.noarch.rpm"
-    mock_ubipop_runner.repos.packages['foo'] = \
-        [get_test_pkg(name="tomcatjss",
-                      filename="tomcatjss-7.3.6-1.el8+1944+b6c8e16f.noarch.rpm"),
-         get_test_pkg(name="kernel",
-                      filename="kernel-7.3.6-1.el8+1944+b6c8e16f.noarch.rpm")
-         ]
-
-    mock_ubipop_runner._create_debuginfo_output_set()
-    out_debug_rpms = mock_ubipop_runner.repos.debug_rpms
-    assert len(out_debug_rpms) == 1
-    assert out_debug_rpms[0].name == "tomcatjss"
-    assert out_debug_rpms[0].filename == expected_debug_filename
-
 
 @pytest.fixture()
 def mock_get_repo_pairs():
@@ -466,3 +451,61 @@ def test_associate_units(mock_ubipop_runner):
     assert len(ret) == 1
     assert ret[0].result() == ["task_id"]
     assert mock_ubipop_runner._changed_repos == set([dst_repo.repo_id])
+
+
+def test_finalize_rpms_output_set(mock_ubipop_runner):
+    expected_filename = "tomcatjss-7.3.6-1.el8+1944+b6c8e16f.noarch.rpm"
+    mock_ubipop_runner.repos.packages['tomcatjss'] = \
+        [get_test_pkg(name="tomcatjss",
+                      filename=expected_filename),
+         get_test_pkg(name="tomcatjss",
+                      filename="tomcatjss-7.3.5-1.el8+1944+b6c8e16f.noarch.rpm")
+         ]
+
+    mock_ubipop_runner._finalize_rpms_output_set()
+
+    out_packages = mock_ubipop_runner.repos.packages['tomcatjss']
+    assert len(out_packages) == 1
+    assert out_packages[0].filename == expected_filename
+
+
+def test_finalize_debug_output_set(mock_ubipop_runner):
+    expected_filename = "tomcatjss-debuginfo-7.3.6-1.el8+1944+b6c8e16f.noarch.rpm"
+    mock_ubipop_runner.repos.debug_rpms['tomcatjss-debuginfo'] = \
+        [get_test_pkg(name="tomcatjss-debuginfo",
+                      filename=expected_filename),
+         get_test_pkg(name="tomcatjss-debuginfo",
+                      filename="tomcatjss-debuginfo-7.3.5-1.el8+1944+b6c8e16f.noarch.rpm")
+         ]
+
+    mock_ubipop_runner._finalize_debug_output_set()
+    out_packages = mock_ubipop_runner.repos.debug_rpms['tomcatjss-debuginfo']
+    assert len(out_packages) == 1
+    assert out_packages[0].filename == expected_filename
+
+
+def test_finalize_finalize_modules_output_set(mock_ubipop_runner):
+    expected_nsvca = "::3::"
+    mock_ubipop_runner.repos.modules['test:module'] = \
+        [get_test_mod(version=2),
+         get_test_mod(version=3)]
+
+    mock_ubipop_runner._finalize_modules_output_set()
+
+    out_modules = mock_ubipop_runner.repos.modules['test:module']
+    assert len(out_modules) == 1
+    assert out_modules[0].nsvca == expected_nsvca
+
+
+def test_exclude_blacklisted_packages(mock_ubipop_runner):
+    mock_ubipop_runner.repos.packages["kernel-blacklisted"] = \
+        [get_test_pkg(name="kernel-blacklisted", filename="foo")]
+    mock_ubipop_runner.repos.pkgs_from_modules = deepcopy(mock_ubipop_runner.repos.packages)
+    mock_ubipop_runner.repos.debug_rpms["kernel-blacklisted-debuginfo"] = \
+        [get_test_pkg(name="kernel-blacklisted-debuginfo", filename="foo")]
+
+    mock_ubipop_runner._exclude_blacklisted_packages()
+
+    assert len(mock_ubipop_runner.repos.packages) == 0
+    assert len(mock_ubipop_runner.repos.pkgs_from_modules) == 0
+    assert len(mock_ubipop_runner.repos.debug_rpms) == 0
